@@ -132,6 +132,72 @@
 
         <!-- Área de Resultados (compartilhada) -->
         <div id="resumoSection" class="d-none mt-4">
+            <!-- Comparativo com Benchmarks -->
+            <div class="card mb-4 bg-light">
+                <div class="card-header">
+                    <h5>📊 Comparativo com Benchmarks</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="text-muted">Seu Patrimônio</h6>
+                                    <h3 id="patrimonioAtual" class="text-primary">R$ 0,00</h3>
+                                    <small class="text-muted">Rentabilidade: <span id="rentabilidadeCarteira" class="fw-bold">0%</span></small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="text-muted">CDI (Acumulado)</h6>
+                                    <h3 id="valorCDI" class="text-success">R$ 0,00</h3>
+                                    <small class="text-muted">Taxa: <span id="taxaCDI">100% do CDI</span></small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="text-muted">SELIC (Acumulado)</h6>
+                                    <h3 id="valorSELIC" class="text-info">R$ 0,00</h3>
+                                    <small class="text-muted">Taxa: <span id="taxaSELIC">100% da SELIC</span></small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <canvas id="graficoComparativo"></canvas>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Indicador</th>
+                                        <th>Valor Atual</th>
+                                        <th>Diferença</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>CDI</td>
+                                        <td id="cdiValor">R$ 0,00</td>
+                                        <td id="cdiDiferenca" class="fw-bold">R$ 0,00</td>
+                                    </tr>
+                                    <tr>
+                                        <td>SELIC</td>
+                                        <td id="selicValor">R$ 0,00</td>
+                                        <td id="selicDiferenca" class="fw-bold">R$ 0,00</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="row mb-4">
                 <div class="col-md-3">
                     <div class="card bg-primary text-white">
@@ -162,6 +228,7 @@
                         <div class="card-body">
                             <h6>Período</h6>
                             <p id="periodo" class="mb-0 small"></p>
+                            <small id="dataAtualDisplay" class="text-muted d-block mt-1"></small>
                         </div>
                     </div>
                 </div>
