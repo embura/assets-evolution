@@ -4,9 +4,56 @@ let graficoComparativo = null;
 let graficoProjecao = null;
 let indiceEdicao = -1;
 
-// Taxas de referência anuais (valores aproximados para 2024)
-const TAXA_CDI_ANUAL = 0.1065; // 10.65% ao ano
-const TAXA_SELIC_ANUAL = 0.1075; // 10.75% ao ano
+// Taxas de referência anuais (carregadas do localStorage ou valores padrão)
+let TAXA_CDI_ANUAL = 0.1065; // 10.65% ao ano
+let TAXA_SELIC_ANUAL = 0.1075; // 10.75% ao ano
+
+// Carregar taxas salvas no localStorage ao iniciar
+function carregarTaxasReferencia() {
+    const cdiSalvo = localStorage.getItem('taxa_cdi');
+    const selicSalvo = localStorage.getItem('taxa_selic');
+    
+    if (cdiSalvo) {
+        TAXA_CDI_ANUAL = parseFloat(cdiSalvo) / 100;
+        document.getElementById('taxaCDIInput').value = cdiSalvo;
+    }
+    if (selicSalvo) {
+        TAXA_SELIC_ANUAL = parseFloat(selicSalvo) / 100;
+        document.getElementById('taxaSELICInput').value = selicSalvo;
+    }
+}
+
+// Salvar taxas no localStorage
+function salvarTaxasReferencia(cdi, selic) {
+    localStorage.setItem('taxa_cdi', cdi.toString());
+    localStorage.setItem('taxa_selic', selic.toString());
+}
+
+// Atualizar taxas a partir dos inputs
+function atualizarTaxasReferencia() {
+    const cdiInput = parseFloat(document.getElementById('taxaCDIInput').value);
+    const selicInput = parseFloat(document.getElementById('taxaSELICInput').value);
+    
+    if (isNaN(cdiInput) || isNaN(selicInput) || cdiInput < 0 || selicInput < 0) {
+        alert('Por favor, insira taxas válidas (valores positivos).');
+        return;
+    }
+    
+    TAXA_CDI_ANUAL = cdiInput / 100;
+    TAXA_SELIC_ANUAL = selicInput / 100;
+    
+    salvarTaxasReferencia(cdiInput, selicInput);
+    
+    alert(`Taxas atualizadas com sucesso!\nCDI: ${cdiInput.toFixed(2)}% a.a.\nSELIC: ${selicInput.toFixed(2)}% a.a.`);
+    
+    // Se houver dashboard visível, recalcular com novas taxas
+    if (!document.getElementById('resumoSection').classList.contains('d-none')) {
+        const investimentos = carregarInvestimentosLocalStorage();
+        if (investimentos.length > 0) {
+            processarManuais();
+        }
+    }
+}
 
 // Funções auxiliares para cálculo de benchmarks
 function calcularFatorAcumulado(dataInicio, dataFim, taxaAnual) {
@@ -218,7 +265,7 @@ function atualizarTabelaManuais(investimentos) {
     if (!investimentos || investimentos.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="5" class="text-center text-muted">Nenhum investimento cadastrado</td>
+                <td colspan="7" class="text-center text-muted">Nenhum investimento cadastrado</td>
             </tr>
         `;
         return;
@@ -226,12 +273,20 @@ function atualizarTabelaManuais(investimentos) {
     
     investimentos.forEach((item, index) => {
         const row = document.createElement('tr');
+        const taxaExibicao = item.taxa_rendimento ? (item.taxa_rendimento * 100).toFixed(2) : '0.00';
+        const vencimentoExibicao = item.vencimento ? formatarData(item.vencimento) : '-';
+        
         row.innerHTML = `
             <td>${formatarData(item.data)}</td>
             <td>${item.ativo}</td>
             <td>${item.tipo_investimento}</td>
             <td>${formatarMoeda(item.valor_total)}</td>
+            <td>${taxaExibicao}%</td>
+            <td>${vencimentoExibicao}</td>
             <td>
+                <button onclick="editarInvestimento(${index})" class="btn btn-sm btn-warning me-1">
+                    ✏️ Editar
+                </button>
                 <button onclick="removerInvestimento(${index})" class="btn btn-sm btn-danger">
                     🗑️ Remover
                 </button>
@@ -239,6 +294,43 @@ function atualizarTabelaManuais(investimentos) {
         `;
         tbody.appendChild(row);
     });
+}
+
+// Função para editar investimento
+function editarInvestimento(index) {
+    const investimentos = carregarInvestimentosLocalStorage();
+    const item = investimentos[index];
+    
+    if (!item) {
+        alert('Investimento não encontrado.');
+        return;
+    }
+    
+    // Preencher formulário com dados do investimento
+    document.getElementById('dataInvestimento').value = item.data;
+    document.getElementById('tipoInvestimento').value = item.tipo_investimento;
+    document.getElementById('ativoInvestimento').value = item.ativo;
+    document.getElementById('valorInvestimento').value = item.valor_total;
+    document.getElementById('taxaRendimento').value = item.taxa_rendimento ? (item.taxa_rendimento * 100).toFixed(2) : '';
+    document.getElementById('vencimentoInvestimento').value = item.vencimento || '';
+    
+    // Definir índice de edição
+    indiceEdicao = index;
+    
+    // Mudar texto do botão
+    document.getElementById('btnAdicionar').textContent = '💾 Salvar Alterações';
+    document.getElementById('btnCancelarEdicao').classList.remove('d-none');
+    
+    // Rolar para o formulário
+    document.getElementById('formInvestimento').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Função para cancelar edição
+function cancelarEdicao() {
+    indiceEdicao = -1;
+    document.getElementById('formInvestimento').reset();
+    document.getElementById('btnAdicionar').textContent = '➕ Adicionar Investimento';
+    document.getElementById('btnCancelarEdicao').classList.add('d-none');
 }
 
 function formatarData(dataStr) {
@@ -344,6 +436,10 @@ function atualizarDashboard(data) {
     document.getElementById('valorCDI').textContent = formatarMoeda(benchmarks.cdi);
     document.getElementById('valorSELIC').textContent = formatarMoeda(benchmarks.selic);
     
+    // Atualizar display das taxas CDI e SELIC
+    document.getElementById('taxaCDIDisplay').textContent = (TAXA_CDI_ANUAL * 100).toFixed(2) + '%';
+    document.getElementById('taxaSELICDisplay').textContent = (TAXA_SELIC_ANUAL * 100).toFixed(2) + '%';
+    
     // Calcular rentabilidade da carteira
     const totalInvestido = investimentos.reduce((sum, inv) => sum + inv.valor_total, 0);
     const rentabilidade = ((data.resumo.patrimonio_total - totalInvestido) / totalInvestido * 100);
@@ -366,6 +462,12 @@ function atualizarDashboard(data) {
     cdiDiferencaEl.className = 'fw-bold ' + (diffCDI >= 0 ? 'text-success' : 'text-danger');
     selicDiferencaEl.className = 'fw-bold ' + (diffSELIC >= 0 ? 'text-success' : 'text-danger');
     
+    // Calcular e atualizar projeção futura
+    const projecao = calcularProjecaoFutura(investimentos);
+    document.getElementById('projPatrimonioAtual').textContent = formatarMoeda(data.resumo.patrimonio_total);
+    document.getElementById('proj1Ano').textContent = formatarMoeda(projecao.valor1Ano);
+    document.getElementById('proj5Anos').textContent = formatarMoeda(projecao.valor5Anos);
+    
     // Atualizar gráfico de evolução
     atualizarGraficoEvolucao(data.evolucao);
     
@@ -374,6 +476,9 @@ function atualizarDashboard(data) {
     
     // Atualizar gráfico comparativo
     atualizarGraficoComparativo(benchmarks);
+    
+    // Atualizar gráfico de projeção
+    atualizarGraficoProjecao(projecao);
     
     // Atualizar tabela
     atualizarTabela(investimentos);
@@ -569,6 +674,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Carregar taxas de referência salvas
+    carregarTaxasReferencia();
+    
     // Carregar investimentos manuais do localStorage ao iniciar
     carregarInvestimentosManuaisLocalStorage();
 });
@@ -596,6 +704,14 @@ async function adicionarInvestimento(event) {
     const tipoInvestimento = document.getElementById('tipoInvestimento').value;
     const ativo = document.getElementById('ativoInvestimento').value;
     const valorTotal = parseFloat(document.getElementById('valorInvestimento').value);
+    const taxaRendimento = parseFloat(document.getElementById('taxaRendimento').value);
+    const vencimento = document.getElementById('vencimentoInvestimento').value || null;
+    
+    // Validação da taxa de rendimento
+    if (isNaN(taxaRendimento) || taxaRendimento < 0) {
+        mostrarErroManual('Por favor, insira uma taxa de rendimento válida (maior ou igual a 0).');
+        return;
+    }
     
     // Esconder mensagens anteriores
     document.getElementById('errorManual').classList.add('d-none');
@@ -608,23 +724,37 @@ async function adicionarInvestimento(event) {
             data: data,
             tipo_investimento: tipoInvestimento.trim(),
             ativo: ativo.trim(),
-            valor_total: valorTotal
+            valor_total: valorTotal,
+            taxa_rendimento: taxaRendimento / 100, // Converter para decimal
+            vencimento: vencimento
         };
         
-        // Carregar investimentos existentes do localStorage
-        let investimentos = carregarInvestimentosLocalStorage();
-        
-        // Adicionar novo investimento
-        investimentos.push(investimento);
-        
-        // Salvar no localStorage
-        salvarInvestimentosLocalStorage(investimentos);
+        // Se estiver editando, atualizar o investimento existente
+        if (indiceEdicao >= 0) {
+            let investimentos = carregarInvestimentosLocalStorage();
+            investimentos[indiceEdicao] = investimento;
+            salvarInvestimentosLocalStorage(investimentos);
+            indiceEdicao = -1;
+            
+            // Resetar botão
+            document.getElementById('btnAdicionar').textContent = '➕ Adicionar Investimento';
+            document.getElementById('btnCancelarEdicao').classList.add('d-none');
+        } else {
+            // Carregar investimentos existentes do localStorage
+            let investimentos = carregarInvestimentosLocalStorage();
+            
+            // Adicionar novo investimento
+            investimentos.push(investimento);
+            
+            // Salvar no localStorage
+            salvarInvestimentosLocalStorage(investimentos);
+        }
         
         document.getElementById('loadingManual').classList.add('d-none');
         
         // Mostrar sucesso
         const successDiv = document.getElementById('successManual');
-        successDiv.textContent = 'Investimento adicionado com sucesso!';
+        successDiv.textContent = indiceEdicao >= 0 ? 'Investimento atualizado com sucesso!' : 'Investimento adicionado com sucesso!';
         successDiv.classList.remove('d-none');
         
         // Limpar formulário
@@ -764,4 +894,143 @@ function calcularDistribuicao(investimentos) {
         tipos: Object.keys(distribuicao),
         valores: Object.values(distribuicao)
     };
+}
+function calcularDistribuicao(investimentos) {
+    const distribuicao = {};
+
+    investimentos.forEach(inv => {
+        if (!distribuicao[inv.tipo_investimento]) {
+            distribuicao[inv.tipo_investimento] = 0;
+        }
+        distribuicao[inv.tipo_investimento] += inv.valor_total;
+    });
+
+    return {
+        tipos: Object.keys(distribuicao),
+        valores: Object.values(distribuicao)
+    };
+}
+
+// Calcular projeção futura baseada nas taxas contratadas de cada investimento
+function calcularProjecaoFutura(investimentos) {
+    const dataHoje = new Date();
+    let valor1Ano = 0;
+    let valor5Anos = 0;
+    
+    const dadosGrafico = {
+        labels: ["Atual", "1 Ano", "2 Anos", "3 Anos", "4 Anos", "5 Anos"],
+        datasets: [{
+            label: "Patrimônio Projetado (R$)",
+            data: [0, 0, 0, 0, 0, 0],
+            borderColor: "#198754",
+            backgroundColor: "rgba(25, 135, 84, 0.1)",
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+        }]
+    };
+    
+    // Valor atual
+    const patrimonioAtual = investimentos.reduce((sum, inv) => sum + inv.valor_total, 0);
+    dadosGrafico.data[0] = patrimonioAtual;
+    
+    investimentos.forEach(inv => {
+        const dataAplicacao = new Date(inv.data);
+        const taxaAnual = inv.taxa_rendimento || 0;
+        const vencimento = inv.vencimento ? new Date(inv.vencimento) : null;
+        
+        // Calcular tempo decorrido desde a aplicação até hoje (em anos)
+        const diasDecorridos = Math.max(0, (dataHoje - dataAplicacao) / (1000 * 60 * 60 * 24));
+        const anosDecorridos = diasDecorridos / 365;
+        
+        // Projeção para 1 ano a partir de hoje
+        const tempo1Ano = anosDecorridos + 1;
+        let valorFuturo1Ano = inv.valor_total;
+        
+        // Verificar se o investimento já venceu ou vencerá antes de 1 ano
+        if (vencimento && vencimento < new Date(dataHoje.getTime() + 365 * 24 * 60 * 60 * 1000)) {
+            // Investimento já venceu ou vencerá antes de 1 ano
+            const diasAteVencimento = Math.max(0, (vencimento - dataAplicacao) / (1000 * 60 * 60 * 24));
+            const anosAteVencimento = Math.min(anosDecorridos + 1, diasAteVencimento / 365);
+            valorFuturo1Ano = inv.valor_total * Math.pow(1 + taxaAnual, anosAteVencimento);
+        } else {
+            valorFuturo1Ano = inv.valor_total * Math.pow(1 + taxaAnual, tempo1Ano);
+        }
+        valor1Ano += valorFuturo1Ano;
+        
+        // Projeção para 5 anos a partir de hoje
+        const tempo5Anos = anosDecorridos + 5;
+        let valorFuturo5Anos = inv.valor_total;
+        
+        if (vencimento) {
+            const diasAteVencimento = Math.max(0, (vencimento - dataAplicacao) / (1000 * 60 * 60 * 24));
+            const anosAteVencimento = Math.min(tempo5Anos, diasAteVencimento / 365);
+            valorFuturo5Anos = inv.valor_total * Math.pow(1 + taxaAnual, anosAteVencimento);
+        } else {
+            valorFuturo5Anos = inv.valor_total * Math.pow(1 + taxaAnual, tempo5Anos);
+        }
+        valor5Anos += valorFuturo5Anos;
+        
+        // Calcular valores intermediários para o gráfico
+        for (let ano = 1; ano <= 5; ano++) {
+            const tempoProjetado = anosDecorridos + ano;
+            let valorProjetado = inv.valor_total;
+            
+            if (vencimento) {
+                const diasAteVencimento = Math.max(0, (vencimento - dataAplicacao) / (1000 * 60 * 60 * 24));
+                const anosAteVencimento = Math.min(tempoProjetado, diasAteVencimento / 365);
+                valorProjetado = inv.valor_total * Math.pow(1 + taxaAnual, anosAteVencimento);
+            } else {
+                valorProjetado = inv.valor_total * Math.pow(1 + taxaAnual, tempoProjetado);
+            }
+            
+            dadosGrafico.data[ano] += valorProjetado;
+        }
+    });
+    
+    return {
+        valor1Ano: valor1Ano,
+        valor5Anos: valor5Anos,
+        grafico: dadosGrafico
+    };
+}
+
+// Atualizar gráfico de projeção
+function atualizarGraficoProjecao(projecao) {
+    const ctx = document.getElementById("graficoProjecao").getContext("2d");
+    
+    if (graficoProjecao) {
+        graficoProjecao.destroy();
+    }
+    
+    graficoProjecao = new Chart(ctx, {
+        type: "bar",
+        data: projecao.grafico,
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: true
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return formatarMoeda(context.parsed.y);
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    ticks: {
+                        callback: function(value) {
+                            return "R$ " + value.toLocaleString("pt-BR");
+                        }
+                    }
+                }
+            }
+        }
+    });
 }

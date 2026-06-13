@@ -14,6 +14,27 @@
             <p class="text-center text-muted">Importe seus investimentos ou cadastre manualmente</p>
         </header>
 
+        <!-- Configurações de Taxas -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">⚙️ Configurar Taxas de Referência</h5>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="taxaCDIInput" class="form-label">Taxa CDI (% a.a.)</label>
+                        <input type="number" id="taxaCDIInput" class="form-control" step="0.01" value="10.65">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="taxaSELICInput" class="form-label">Taxa SELIC (% a.a.)</label>
+                        <input type="number" id="taxaSELICInput" class="form-control" step="0.01" value="10.75">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button onclick="atualizarTaxasReferencia()" class="btn btn-primary w-100">💾 Salvar Taxas</button>
+                    </div>
+                </div>
+                <small class="text-muted">Estas taxas são usadas para calcular os benchmarks e projeções futuras.</small>
+            </div>
+        </div>
+
         <!-- Abas de Navegação -->
         <ul class="nav nav-tabs mb-4" id="mainTab" role="tablist">
             <li class="nav-item" role="presentation">
@@ -164,7 +185,7 @@
                                 <div class="card-body">
                                     <h6 class="text-muted">CDI (Acumulado)</h6>
                                     <h3 id="valorCDI" class="text-success">R$ 0,00</h3>
-                                    <small class="text-muted">Taxa: <span id="taxaCDI">100% do CDI</span></small>
+                                    <small class="text-muted">Taxa: <span id="taxaCDIDisplay">0.00%</span> a.a.</small>
                                 </div>
                             </div>
                         </div>
@@ -173,7 +194,7 @@
                                 <div class="card-body">
                                     <h6 class="text-muted">SELIC (Acumulado)</h6>
                                     <h3 id="valorSELIC" class="text-info">R$ 0,00</h3>
-                                    <small class="text-muted">Taxa: <span id="taxaSELIC">100% da SELIC</span></small>
+                                    <small class="text-muted">Taxa: <span id="taxaSELICDisplay">0.00%</span> a.a.</small>
                                 </div>
                             </div>
                         </div>
