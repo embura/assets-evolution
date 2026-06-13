@@ -58,7 +58,7 @@
                         <form id="formInvestimento" onsubmit="adicionarInvestimento(event)">
                             <div class="row g-3">
                                 <div class="col-md-3">
-                                    <label for="dataInvestimento" class="form-label">Data *</label>
+                                    <label for="dataInvestimento" class="form-label">Data da Aplicação *</label>
                                     <input type="date" id="dataInvestimento" class="form-control" required>
                                 </div>
                                 <div class="col-md-3">
@@ -74,17 +74,26 @@
                                         <option value="Outros">Outros</option>
                                     </select>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <label for="ativoInvestimento" class="form-label">Ativo *</label>
-                                    <input type="text" id="ativoInvestimento" class="form-control" placeholder="Ex: PETR4, HGLG11" required>
+                                    <input type="text" id="ativoInvestimento" class="form-control" placeholder="Ex: PETR4" required>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <label for="valorInvestimento" class="form-label">Valor Total (R$) *</label>
                                     <input type="number" id="valorInvestimento" class="form-control" step="0.01" min="0.01" placeholder="0,00" required>
                                 </div>
+                                <div class="col-md-2">
+                                    <label for="taxaRendimento" class="form-label" title="% ao ano">Taxa Rend. (% a.a.) *</label>
+                                    <input type="number" id="taxaRendimento" class="form-control" step="0.01" min="0" placeholder="Ex: 10.5" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="vencimentoInvestimento" class="form-label">Data de Vencimento</label>
+                                    <input type="date" id="vencimentoInvestimento" class="form-control">
+                                </div>
                             </div>
                             <div class="mt-3">
-                                <button type="submit" class="btn btn-success">➕ Adicionar Investimento</button>
+                                <button type="submit" id="btnAdicionar" class="btn btn-success">➕ Adicionar Investimento</button>
+                                <button type="button" id="btnCancelarEdicao" class="btn btn-secondary d-none" onclick="cancelarEdicao()">❌ Cancelar Edição</button>
                                 <button type="button" onclick="processarManuais()" class="btn btn-primary">📊 Visualizar Dashboard</button>
                                 <button type="button" onclick="limparInvestimentos()" class="btn btn-danger">🗑️ Limpar Lista</button>
                             </div>
@@ -111,16 +120,18 @@
                             <table class="table table-striped table-hover">
                                 <thead>
                                     <tr>
-                                        <th>Data</th>
+                                        <th>Data Aplic.</th>
                                         <th>Ativo</th>
                                         <th>Tipo</th>
                                         <th>Valor Total</th>
+                                        <th>Taxa (% a.a.)</th>
+                                        <th>Vencimento</th>
                                         <th>Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tabelaManuais">
                                     <tr>
-                                        <td colspan="5" class="text-center text-muted">Nenhum investimento cadastrado</td>
+                                        <td colspan="7" class="text-center text-muted">Nenhum investimento cadastrado</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -198,6 +209,48 @@
                 </div>
             </div>
 
+            <!-- Projeção Futura -->
+            <div class="card mb-4 bg-light">
+                <div class="card-header">
+                    <h5>🔮 Projeção de Rendimentos Futuros</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center mb-3">
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="text-muted">Patrimônio Atual</h6>
+                                    <h3 id="projPatrimonioAtual" class="text-primary">R$ 0,00</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="text-muted">Projeção em 1 Ano</h6>
+                                    <h3 id="proj1Ano" class="text-success">R$ 0,00</h3>
+                                    <small class="text-muted">Baseado nas taxas contratadas</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="text-muted">Projeção em 5 Anos</h6>
+                                    <h3 id="proj5Anos" class="text-info">R$ 0,00</h3>
+                                    <small class="text-muted">Baseado nas taxas contratadas</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <canvas id="graficoProjecao"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="row mb-4">
                 <div class="col-md-3">
                     <div class="card bg-primary text-white">
@@ -268,10 +321,12 @@
                         <table class="table table-striped table-hover">
                             <thead>
                                 <tr>
-                                    <th>Data</th>
+                                    <th>Data Aplic.</th>
                                     <th>Ativo</th>
                                     <th>Tipo</th>
                                     <th>Valor Total</th>
+                                    <th>Taxa (% a.a.)</th>
+                                    <th>Vencimento</th>
                                 </tr>
                             </thead>
                             <tbody id="tabelaInvestimentos">

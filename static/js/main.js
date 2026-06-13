@@ -1,6 +1,8 @@
 let graficoEvolucao = null;
 let graficoDistribuicao = null;
 let graficoComparativo = null;
+let graficoProjecao = null;
+let indiceEdicao = -1;
 
 // Taxas de referência anuais (valores aproximados para 2024)
 const TAXA_CDI_ANUAL = 0.1065; // 10.65% ao ano
